@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>City Distance Calculator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBx_gW1PqBDeBXE_oK36bg-lBzYV0vBANo"></script>
+    <script>
+        $(function() {
+            $('form').submit(function(event) {
+                event.preventDefault();
+                const city1 = $('#city1').val();
+                const city2 = $('#city2').val();
+                $.get('/distance', { city1, city2 }, function(data) {
+                    $('#result').text('Distance: ' + data.distance + ' km');
+                    initMap(data.distance, city1, city2);
+                });
+            });
+        });
+
+        function initMap(distance, city1, city2) {
+            const directionsService = new google.maps.DirectionsService();
+            const directionsRenderer = new google.maps.DirectionsRenderer();
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 7,
+                center: { lat: 20.5937, lng: 78.9629 },
+            });
+            directionsRenderer.setMap(map);
+
+            const request = {
+                origin: city1,
+                destination: city2,
+                travelMode: 'DRIVING'
+            };
+
+            directionsService.route(request, function(response, status) {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                    const route = response.routes[0];
+                    const summaryPanel = document.getElementById('directions-panel');
+                    summaryPanel.innerHTML = '';
+                    const distanceInfo = document.createElement('div');
+                    distanceInfo.textContent = 'Total Distance: ' + distance + ' km';
+                    summaryPanel.appendChild(distanceInfo);
+                    for (let i = 0; i < route.legs.length; i++) {
+                        const routeSegment = i + 1;
+                        const distanceInfo = document.createElement('div');
+                        distanceInfo.textContent = route.legs[i].start_address + ' to ' + route.legs[i].end_address;
+                        const durationInfo = document.createElement('div');
+                        durationInfo.textContent = route.legs[i].duration.text;
+                        summaryPanel.appendChild(distanceInfo);
+                        summaryPanel.appendChild(durationInfo);
+                    }
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>City Distance Calculator</h1>
+    <form>
+        <label for="city1">City 1:</label>
+        <input type="text" id="city1" name="city1"><br>
+
+        <label for="city2">City 2:</label>
+        <input type="text" id="city2" name="city2"><br>
+
+        <input type="submit" value="Calculate">
+    </form>
+
+    <div id="result"></div>
+
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="directions-panel"></div>
+    </div>
+</body>
+</html>
